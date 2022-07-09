@@ -1,14 +1,13 @@
 #ifndef IRIMIT_H
 #define IRIMIT_H
 
+#include "FreeRTOSConfig_usr.h"
 #include <LiquidCrystal.h>
 #include <Arduino_FreeRTOS.h>
 #include <IRremote.hpp>
 #include <EEPROM.h>
 #include<avr/pgmspace.h>
 #include<avr/sleep.h>
-
-#define configMINIMAL_STACK_SIZE = 85
 
 //Pin setting
 #define PIN_SEND 12
@@ -83,7 +82,8 @@ const char *const ProtocolList[] PROGMEM = {
 void TaskMain(void *pvParameters);
 void TaskButtonControl(void *pvParameters);
 
-void LcdDisplay(bool clearDisp, bool cursorSet, char text[16]);
+// void LcdDisplay(bool clearDisp, bool cursorSet, char text[16]);
+void LcdDisplay(bool clearDisp, bool cursorSet, char*);
 void IRTransmiter(int buttonNum);
 bool IRReceiver(int buttonNum);
 void EEPROMControler(bool storeOrRead);

@@ -1,21 +1,26 @@
 #include "IR_Imitator.h"
-//test
+
+#include <stdio.h>
 
 //Task handle
 TaskHandle_t xTaskMain;
 TaskHandle_t  xTaskButtonControl;
 
 //Analog input level for button identification
-const short int ButtonsVoltage[13] {0, 15, 45, 80, 115, 160, 300, 400, 465, 610, 620, 635, 645};
+const short int ButtonsVoltage[13] {0, 10, 35, 65, 95, 130, 255, 335, 390, 510, 530, 540, 550};
 
 const int DEFUALT_NUMBER_OF_REPEATS_TO_SEND = 3;
 
 IRData StoredIRDataList[10];
 bool ButtonStatusList[12];
 char DisplayCharacter[17];
+// char DisplayCharacter[4];
 unsigned long LastPressedTime;
 
+char voltage[4];
+
 LiquidCrystal lcd (LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
+
 
 
 void setup() {
@@ -36,7 +41,8 @@ void setup() {
   pinMode(LCD_BUCKLIGHT, OUTPUT);
   digitalWrite(LCD_BUCKLIGHT, HIGH);
   lcd.begin(16, 2);
-  LcdDisplay(1, 0, "Wake up");
+  char tmp[] = "wake up";
+  LcdDisplay(1, 0, tmp);
 
   //Read out from EEPROM
   EEPROMControler(false);
@@ -111,13 +117,15 @@ void TaskMain(void *pvParameters) {
       if (i == 8) {
         if (ButtonStatusList[8]) {
           modeFlag = false;
-          LcdDisplay(1, 0, "Transmit Mode");
+          char tmp[] = "Transmit Mode";
+          LcdDisplay(1, 0, tmp);
           zeroBtnCnt = 0;
         }
       } else if (i == 0) {
         if (ButtonStatusList[0] && !storeCntFlag) {
           modeFlag = true;
-          LcdDisplay(1, 0, "Store Mode");
+          char tmp[] = "Store Mode";
+          LcdDisplay(1, 0, tmp);
         }
 
         //IF 0 Button pressed 3 itmes in a row, store the IRDatas
@@ -204,6 +212,17 @@ void TaskButtonControl(void *pvParameters) {
           pressedButton = i;
         }
         tmp = i;
+
+        // Serial.print(pressedButton);
+        // Serial.print(":");
+        // Serial.println(val);
+
+        
+
+        // snprintf(voltage,4,"%d",000);
+        // snprintf(voltage,4,"%d",val);
+      
+        // snprintf(voltage,4,"%d",pressedButton);
       }
 
       //Reset the Button Status
@@ -241,6 +260,10 @@ void LcdDisplay(bool clearDisp, bool cursorSet, char text[17]) {
 
     lcd.write(text);
 
+    // lcd.setCursor(0,0);
+    // lcd.write(voltage);
+    // strcpy(Displaaracter, voltage);
+
     strcpy(DisplayCharacter, text);
   }
 }
@@ -248,7 +271,8 @@ void LcdDisplay(bool clearDisp, bool cursorSet, char text[17]) {
 void IRTransmiter(int buttonNum) {
   IrReceiver.stop();
   if (StoredIRDataList[buttonNum].protocol == 0) {
-    LcdDisplay(0, 1, "Nothing stored");
+    char tmp[] = "Nothing stored";
+    LcdDisplay(0, 1, tmp);
   } else {
     IrSender.write(&StoredIRDataList[buttonNum], DEFUALT_NUMBER_OF_REPEATS_TO_SEND);
 
@@ -266,7 +290,8 @@ bool IRReceiver(int buttonNum) {
 
   bool receiveFlag = false;
 
-  LcdDisplay(0, 1, "Receiving...");
+  char tmp[] = "Receiving...";
+  LcdDisplay(0, 1, tmp);
 
   if (IrReceiver.decode()) {
     IRData *ReceivedData = IrReceiver.read();
@@ -280,7 +305,8 @@ bool IRReceiver(int buttonNum) {
     } else if (ReceivedData->flags & IRDATA_FLAGS_PARITY_FAILED) {
       //Ignore parity error
     } else if (ReceivedData->protocol == UNKNOWN) {
-      LcdDisplay(1, 0, "Unknown");
+      char tmp[] = "Unknown";
+      LcdDisplay(1, 0, tmp);
       receiveFlag = true;
     } else {
       //Store the receved IRData
@@ -312,7 +338,8 @@ void EEPROMControler(bool storeOrRead) {
       EEPROM.put(address, StoredIRDataList[i]);
       address += sizeof(IRData);
     }
-    LcdDisplay(1, 0, "Stored to EEPROM");
+    char tmp[] = "Stored to EEPROM";
+    LcdDisplay(1, 0, tmp);
   } else {
     int i;
     for (i = 0; i < 10; i++) {
