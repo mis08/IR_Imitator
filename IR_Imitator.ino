@@ -1,7 +1,5 @@
 #include "IR_Imitator.h"
 
-#include <stdio.h>
-
 //Task handle
 TaskHandle_t xTaskMain;
 TaskHandle_t  xTaskButtonControl;
@@ -11,7 +9,15 @@ const short int ButtonsVoltage[13] {0, 10, 35, 65, 95, 130, 255, 335, 390, 510, 
 
 const int DEFUALT_NUMBER_OF_REPEATS_TO_SEND = 3;
 
-IRData StoredIRDataList[10];
+typedef struct{
+  IRData receivedIRData;
+  uint8_t rawCode[RAW_BUFFER_LENGTH];
+  uint8_t rawCodeLength;
+}storedIRData;
+
+storedIRData StoredIRDataList[10];
+
+// IRData StoredIRDataList[10];
 bool ButtonStatusList[12];
 char DisplayCharacter[17];
 // char DisplayCharacter[4];
@@ -270,15 +276,16 @@ void LcdDisplay(bool clearDisp, bool cursorSet, char text[17]) {
 
 void IRTransmiter(int buttonNum) {
   IrReceiver.stop();
-  if (StoredIRDataList[buttonNum].protocol == 0) {
+  if (StoredIRDataList[buttonNum].receivedIRData.protocol == 0) {
     char tmp[] = "Nothing stored";
     LcdDisplay(0, 1, tmp);
+    IrSender.sendRaw(StoredIRDataList[buttonNum].rawCode,StoredIRDataList[buttonNum].rawCodeLength, 38);
   } else {
-    IrSender.write(&StoredIRDataList[buttonNum], DEFUALT_NUMBER_OF_REPEATS_TO_SEND);
+    IrSender.write(&StoredIRDataList[buttonNum].receivedIRData, DEFUALT_NUMBER_OF_REPEATS_TO_SEND);
 
     char tmp[] = "Sending ";
     char protocol[9];
-    ReadOutTextFromPRGMEM(protocol, StoredIRDataList[buttonNum].protocol);
+    ReadOutTextFromPRGMEM(protocol, StoredIRDataList[buttonNum].receivedIRData.protocol);
     strcat(tmp, protocol);
     LcdDisplay(0, 1, tmp);
   }
@@ -304,28 +311,29 @@ bool IRReceiver(int buttonNum) {
       //Ignore autorepeat
     } else if (ReceivedData->flags & IRDATA_FLAGS_PARITY_FAILED) {
       //Ignore parity error
-    } else if (ReceivedData->protocol == UNKNOWN) {
-      char tmp[] = "Unknown";
-      LcdDisplay(1, 0, tmp);
-      receiveFlag = true;
     } else {
       //Store the receved IRData
 
-      StoredIRDataList[buttonNum] = *ReceivedData;
+      StoredIRDataList[buttonNum].receivedIRData = *ReceivedData;
 
-      if (StoredIRDataList[buttonNum].protocol != 0) {
-        StoredIRDataList[buttonNum].flags = 0;
+      if (StoredIRDataList[buttonNum].receivedIRData.protocol != 0) {
+        StoredIRDataList[buttonNum].receivedIRData.flags = 0;
         char tmp[] = "Receive ";
         char protocol[9];
-        ReadOutTextFromPRGMEM(protocol, StoredIRDataList[buttonNum].protocol);
+        ReadOutTextFromPRGMEM(protocol, StoredIRDataList[buttonNum].receivedIRData.protocol);
         strcat(tmp, protocol);
         LcdDisplay(0, 1, tmp);
-        receiveFlag = true;
+      }else{
+        StoredIRDataList[buttonNum].rawCodeLength = IrReceiver.decodedIRData.rawDataPtr-> rawlen -1;
+        IrReceiver.compensateAndStoreIRResultInArray(StoredIRDataList[buttonNum].rawCode);
       }
+
+      receiveFlag = true;
     }
 
     IrReceiver.resume();
   }
+
   return receiveFlag;
 }
 

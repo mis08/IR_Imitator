@@ -87,7 +87,7 @@ void LcdDisplay(bool clearDisp, bool cursorSet, char*);
 void IRTransmiter(int buttonNum);
 bool IRReceiver(int buttonNum);
 void EEPROMControler(bool storeOrRead);
-void ReadOutTextFromPRGMEM(char *returnText[5], int protocolNum);
+void ReadOutTextFromPRGMEM(char returnText[9], int protocolNum);
 void WakeUp();
 void SetUpSleep();
 bool TimeKeeper(bool timeReset);
